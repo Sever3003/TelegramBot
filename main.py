@@ -1,13 +1,10 @@
 from aiogram import Bot, Dispatcher, types, executor
 import requests
-from dataclasses import dataclass
 
 from bs4 import BeautifulSoup as BS
-
 import pytz
 from geopy import GoogleV3
 
-# погода
 from pyowm import OWM
 from pyowm.utils.config import get_default_config
 
@@ -44,20 +41,22 @@ async def check_city(msg: types.Message):
 
         owm = OWM('2e8a65f8f73b20ed812a0fc06669838f', config_dict)
         mgr = owm.weather_manager()
-        observation = mgr.weather_at_place(now_city)
-        global weath
-        weath = observation.weather
+        try:
+            observation = mgr.weather_at_place(now_city)
+            global weath
+            weath = observation.weather
 
+            markup = types.InlineKeyboardMarkup(resize_keyboard=True, row_width=2)
+            website = types.KeyboardButton(text='Wiki-страница', callback_data='website')
+            weather = types.KeyboardButton(text='погода', callback_data='all_info')
+            temperature = types.KeyboardButton(text='температура', callback_data='temperature')
+            wind_speed = types.KeyboardButton(text='скорость ветра', callback_data='wind_speed')
+            humidity = types.KeyboardButton(text='влажность', callback_data='humidity')
 
-        markup = types.InlineKeyboardMarkup(resize_keyboard=True, row_width=2)
-        website = types.KeyboardButton(text='Wiki-страница', callback_data='website')
-        weather = types.KeyboardButton(text='погода', callback_data='all_info')
-        location = types.KeyboardButton(text='температура', callback_data='temperature')
-        time = types.KeyboardButton(text='скорость ветра', callback_data='wind_speed')
-        cartoon = types.KeyboardButton(text='влажность', callback_data='humidity')
-
-        markup.add(weather, website, location, time, cartoon)
-        await msg.answer('Информация о данном городе', reply_markup=markup)
+            markup.add(weather, temperature, wind_speed, humidity, website)
+            await msg.answer('Информация о данном городе', reply_markup=markup)
+        except:
+            await msg.answer('Неверно введено название города, попробуйте еще раз')
     else:
         await msg.answer('Неверно введено название города, попробуйте еще раз')
 
@@ -72,30 +71,29 @@ async def answer_website(callback):
         config_dict = get_default_config()
         config_dict['language'] = 'ru'
 
-        t = weath.temperature("celsius")
-        t1 = t['temp']
-        t2 = t['feels_like']
-        t3 = t['temp_max']
-        t4 = t['temp_min']
+        temp = weath.temperature("celsius")
+        temperature_now = temp['temp']
+        temperature_feel = temp['feels_like']
+        temperature_max = temp['temp_max']
+        temperature_min = temp['temp_min']
 
-        wi = weath.wind()['speed']
-        humi = weath.humidity
-        cl = weath.clouds
-        st = weath.status
-        dt = weath.detailed_status
-        ti = weath.reference_time('iso')
-        pr = weath.pressure['press']
-        vd = weath.visibility_distance
+        wind_speed = weath.wind()['speed']
+        humidity = weath.humidity
+        clouds = weath.clouds
+        status = weath.status
+        detailed_status = weath.detailed_status
+        pressure = weath.pressure['press']
+        visibility_distance = weath.visibility_distance
 
-        await bot.send_message(callback.message.chat.id, "В городе " + str(now_city) + " температура " + str(t1) + " °C" + "\n" +
-                         "Максимальная температура " + str(t3) + " °C" + "\n" +
-                         "Минимальная температура " + str(t4) + " °C" + "\n" +
-                         "Ощущается как " + str(t2) + " °C" + "\n" +
-                         "Скорость ветра " + str(wi) + " м/с" + "\n" +
-                         "Давление " + str(pr) + " мм.рт.ст" + "\n" +
-                         "Влажность " + str(humi) + " %" + "\n" +
-                         "Видимость " + str(vd) + "  метров" + "\n" +
-                         "Описание " + str(dt))
+        await bot.send_message(callback.message.chat.id, "В городе " + str(now_city) + " температура " + str(temperature_now) + " °C" + "\n" +
+                         "Максимальная температура " + str(temperature_max) + " °C" + "\n" +
+                         "Минимальная температура " + str(temperature_min) + " °C" + "\n" +
+                         "Ощущается как " + str(temperature_feel) + " °C" + "\n" +
+                         "Скорость ветра " + str(wind_speed) + " м/с" + "\n" +
+                         "Давление " + str(pressure) + " мм.рт.ст" + "\n" +
+                         "Влажность " + str(humidity) + " %" + "\n" +
+                         "Видимость " + str(visibility_distance) + "  метров" + "\n" +
+                         "Описание " + str(detailed_status))
 
     elif callback.data == 'temperature':
         config_dict = get_default_config()
